@@ -37,6 +37,24 @@ function createWindow(): void {
     console.log('[Main Hexagonal] Main window displayed');
   });
 
+  // 윈도우 종료 버튼 클릭 처리
+  mainWindow.on('close', (event) => {
+    console.log('[Main Hexagonal] Main window close requested');
+
+    // 이미 종료 처리 중이면 그대로 진행
+    if (isShuttingDown) {
+      console.log('[Main Hexagonal] Already shutting down, allowing window close');
+      return;
+    }
+
+    // 종료 처리 시작
+    event.preventDefault();
+    console.log('[Main Hexagonal] Starting shutdown process from window close');
+
+    // 앱 종료 요청 (before-quit 이벤트 트리거)
+    app.quit();
+  });
+
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url);
     return { action: 'deny' };
@@ -137,22 +155,35 @@ app.on('window-all-closed', async () => {
   }
 });
 
+// 종료 처리 상태 추적
+let isShuttingDown = false;
+
 /**
  * 애플리케이션 종료 전 처리
  */
 app.on('before-quit', async (event) => {
   console.log('[Main Hexagonal] Application will quit');
 
-  // 비동기 종료 처리가 필요한 경우
+  // 이미 종료 처리 중이면 기본 동작 허용
+  if (isShuttingDown) {
+    console.log('[Main Hexagonal] Already shutting down, allowing default quit');
+    return;
+  }
+
+  // 첫 번째 종료 시도시에만 정리 작업 수행
   event.preventDefault();
+  isShuttingDown = true;
 
   try {
     await shutdownApplication();
-    app.exit(0);
+    console.log('[Main Hexagonal] Shutdown complete');
   } catch (error) {
-    console.error('[Main Hexagonal] Error during quit:', error);
-    app.exit(1);
+    console.error('[Main Hexagonal] Error during shutdown:', error);
   }
+
+  // 모든 정리 작업 완료 후 프로세스 종료
+  console.log('[Main Hexagonal] Exiting process');
+  process.exit(0);
 });
 
 /**
