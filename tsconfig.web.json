@@ -10,9 +10,17 @@
     "composite": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "paths": {
       "@renderer/*": [
         "src/renderer/src/*"
+      ],
+      "@shared/*": [
+        "src/shared/*"
       ]
     }
   }

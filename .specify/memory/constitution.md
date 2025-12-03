@@ -1,50 +1,65 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+Version change: 1.0.0 → 2.0.0
+Modified principles:
+- III. Test-First → III. Essential Testing (redefined scope from comprehensive to educational)
+Added sections: Learning Purpose section
+Templates requiring updates:
+✅ .specify/templates/plan-template.md - testing approach updated
+✅ .specify/templates/spec-template.md - learning context aligned
+✅ .specify/templates/tasks-template.md - testing tasks scope clarified
+Follow-up TODOs: None
+-->
+
+# CA-Note Electron App Constitution
+
+## Learning Purpose
+
+This project serves as an educational exploration of Clean Architecture principles in an Electron/React/TypeScript environment. The primary goal is understanding architectural patterns through practical implementation of a markdown editor with plaintext authoring, preview capabilities, filesystem persistence, and file loading/editing functionality.
+
+**Focus**: Architecture comprehension over production-ready completeness. Learning through controlled complexity and essential testing rather than exhaustive coverage.
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Clean Architecture First
+Every feature MUST follow Clean Architecture principles with clear layer separation: Entities (business logic) → Use Cases (application logic) → Interface Adapters (controllers/presenters) → Frameworks & Drivers (UI/DB). Dependencies MUST point inward only. No framework code in business logic layers.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+**Rationale**: Primary learning objective. Demonstrates separation of concerns and dependency inversion in a real application context.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Feature-Driven Development
+Features MUST be developed as independent vertical slices from UI to data layer. Each feature slice MUST be independently testable and deliverable. No horizontal layer-first development.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+**Rationale**: Reinforces architectural understanding by implementing complete use cases that demonstrate all layers working together.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Essential Testing (Learning-Focused)
+Testing MUST be essential and educational, not excessive. Write tests that demonstrate architectural boundaries and core business logic. Focus on: (1) Entity/Use Case unit tests for business rules, (2) Integration tests for critical user journeys, (3) Contract tests for layer boundaries. Avoid over-testing of UI details, trivial getters/setters, or framework code.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**Rationale**: Tests serve as executable documentation of architecture. Quality learning comes from understanding what to test and why, not from achieving high coverage percentages.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. TypeScript Strictness
+TypeScript strict mode MUST be enabled. All code MUST have explicit types. No `any` types except for well-documented external library integrations. Type safety MUST extend through all architectural layers.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+**Rationale**: Static typing reveals architectural boundaries and prevents runtime errors during learning experiments.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Electron Process Isolation
+Main and renderer processes MUST communicate only through well-defined IPC contracts. No shared state between processes. Preload scripts MUST expose minimal, type-safe APIs. Security-first approach to inter-process communication.
+
+**Rationale**: Demonstrates proper separation of concerns in multi-process architectures and teaches secure application design.
+
+## Learning Standards
+
+Code MUST be readable and self-documenting for educational review. Complexity MUST be justified in terms of architectural learning value. Performance requirements are relaxed in favor of clear, understandable implementations. Cross-platform compatibility SHOULD be maintained but is secondary to architectural clarity.
+
+**Rationale**: Optimizes for learning outcomes over production readiness while maintaining professional development practices.
+
+## Development Workflow
+
+Feature development MUST follow: Specification → Essential Test Design → Implementation → Architectural Review. Focus on understanding why each architectural decision was made. Code reviews MUST verify Clean Architecture compliance and learning objective alignment. Direct commits to main branch are acceptable for learning experiments.
+
+**Rationale**: Emphasizes understanding over process overhead while maintaining architectural discipline.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution prioritizes learning and architectural understanding. Amendments should enhance educational value while maintaining Clean Architecture principles. Excessive testing or production-level complexity MUST be avoided unless it serves a specific learning purpose. Learning documentation takes precedence over exhaustive documentation.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 2.0.0 | **Ratified**: 2025-12-03 | **Last Amended**: 2025-12-03

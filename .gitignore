@@ -1,6 +1,15 @@
 node_modules
 dist
 out
+build
 .DS_Store
 .eslintcache
 *.log*
+.env*
+.vscode/
+.idea/
+*.tmp
+*.swp
+coverage/
+.nyc_output/
+Thumbs.db
