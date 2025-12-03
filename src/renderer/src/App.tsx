@@ -176,22 +176,26 @@ function App(): React.JSX.Element {
    * Handle content changes in the editor
    */
   const handleContentChange = useCallback((newContent: string) => {
-    setAppState(prev => ({
-      ...prev,
-      currentDocument: prev.currentDocument
-        ? {
-            ...prev.currentDocument,
-            content: newContent,
-            metadata: {
-              ...prev.currentDocument.metadata,
-              isDirty: true,
-              modifiedAt: new Date(),
-              wordCount: newContent.split(/\s+/).filter(word => word.length > 0).length,
-              characterCount: newContent.replace(/\s/g, '').length,
-            },
-          }
-        : null,
-    }));
+    console.log('[App] Content change received:', newContent.substring(0, 50) + '...');
+    setAppState(prev => {
+      console.log('[App] Updating state with new content');
+      return {
+        ...prev,
+        currentDocument: prev.currentDocument
+          ? {
+              ...prev.currentDocument,
+              content: newContent,
+              metadata: {
+                ...prev.currentDocument.metadata,
+                isDirty: true,
+                modifiedAt: new Date(),
+                wordCount: newContent.split(/\s+/).filter(word => word.length > 0).length,
+                characterCount: newContent.replace(/\s/g, '').length,
+              },
+            }
+          : null,
+      };
+    });
   }, []);
 
   /**

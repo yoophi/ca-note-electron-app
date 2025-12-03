@@ -5,7 +5,7 @@
  * for use in the main App component
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { MarkdownEditor as CAMarkdownEditor } from '../../adapters/components/MarkdownEditor';
 import type { CursorPosition } from '../../../shared/entities/EditorState';
 
@@ -24,7 +24,16 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   placeholder = 'Start writing your markdown...',
   autoFocus = false,
 }) => {
+  console.log('[MarkdownEditor Wrapper] Rendered with props:', {
+    contentLength: content.length,
+    readOnly,
+    placeholder,
+    autoFocus,
+    hasOnContentChange: !!onContentChange
+  });
+
   const handleContentChange = useCallback((newContent: string) => {
+    console.log('[MarkdownEditor Wrapper] Content changed:', newContent.substring(0, 50) + '...');
     onContentChange?.(newContent);
   }, [onContentChange]);
 
@@ -32,6 +41,15 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     // This could be used for status bar updates or other features
     console.debug('Cursor position changed:', position);
   }, []);
+
+  // Memoize config object to prevent recreation on every render
+  const editorConfig = useMemo(() => ({
+    lineNumbers: true,
+    lineWrapping: true,
+    enableSearch: true,
+    enableAutocompletion: true,
+    highlightActiveLine: !readOnly,
+  }), [readOnly]);
 
   return (
     <div className="markdown-editor-wrapper" style={{ height: '100%' }}>
@@ -44,13 +62,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         autoFocus={autoFocus}
         className="markdown-editor-main"
         style={{ height: '100%' }}
-        config={{
-          lineNumbers: true,
-          lineWrapping: true,
-          enableSearch: true,
-          enableAutocompletion: true,
-          highlightActiveLine: !readOnly,
-        }}
+        config={editorConfig}
       />
     </div>
   );

@@ -1,13 +1,13 @@
 <!--
 Sync Impact Report:
-Version change: 1.0.0 → 2.0.0
-Modified principles:
-- III. Test-First → III. Essential Testing (redefined scope from comprehensive to educational)
-Added sections: Learning Purpose section
+Version change: 2.0.0 → 2.1.0
+Modified principles: None
+Added sections: VI. Hexagonal Architecture for Main Process
+Removed sections: None
 Templates requiring updates:
-✅ .specify/templates/plan-template.md - testing approach updated
-✅ .specify/templates/spec-template.md - learning context aligned
-✅ .specify/templates/tasks-template.md - testing tasks scope clarified
+⚠ .specify/templates/plan-template.md - Constitution Check may need updates
+⚠ .specify/templates/spec-template.md - Architecture requirements alignment needed
+⚠ .specify/templates/tasks-template.md - Task categorization may need architecture tasks
 Follow-up TODOs: None
 -->
 
@@ -46,6 +46,11 @@ Main and renderer processes MUST communicate only through well-defined IPC contr
 
 **Rationale**: Demonstrates proper separation of concerns in multi-process architectures and teaches secure application design.
 
+### VI. Hexagonal Architecture for Main Process
+Main process code MUST follow hexagonal architecture principles with clear separation between business logic core and external adapters. External concerns (filesystem, IPC, OS APIs) MUST be abstracted through ports and adapters. The business logic core MUST be framework-agnostic and testable in isolation.
+
+**Rationale**: Reinforces architectural learning by demonstrating how to isolate core business logic from external dependencies in the main process, complementing the Clean Architecture principles applied to the overall application structure.
+
 ## Learning Standards
 
 Code MUST be readable and self-documenting for educational review. Complexity MUST be justified in terms of architectural learning value. Performance requirements are relaxed in favor of clear, understandable implementations. Cross-platform compatibility SHOULD be maintained but is secondary to architectural clarity.
@@ -62,4 +67,4 @@ Feature development MUST follow: Specification → Essential Test Design → Imp
 
 This constitution prioritizes learning and architectural understanding. Amendments should enhance educational value while maintaining Clean Architecture principles. Excessive testing or production-level complexity MUST be avoided unless it serves a specific learning purpose. Learning documentation takes precedence over exhaustive documentation.
 
-**Version**: 2.0.0 | **Ratified**: 2025-12-03 | **Last Amended**: 2025-12-03
+**Version**: 2.1.0 | **Ratified**: 2025-12-03 | **Last Amended**: 2025-12-03
