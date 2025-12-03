@@ -8,7 +8,7 @@
 
 import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import { EditorView } from '@codemirror/view';
-import { EditorState } from '@codemirror/state';
+import { EditorState, StateEffect } from '@codemirror/state';
 import {
   createMarkdownEditorExtensions,
   EditorUtils,
@@ -95,73 +95,120 @@ export const MarkdownEditor = React.memo<MarkdownEditorProps>(({
   const contentRef = useRef(content);
   const ignoreNextChangeRef = useRef(false);
 
-  // Memoize editor configuration to prevent unnecessary reconfiguration
-  const editorConfig = useMemo<EditorConfig>(() => ({
-    readOnly,
-    placeholder,
-    enableSearch: true,
-    enableAutocompletion: true,
-    lineNumbers: true,
-    lineWrapping: true,
-    highlightActiveLine: !readOnly,
-    vimMode: enableVim,
-    darkTheme: false, // TODO: Get from theme context
-    ...config,
-  }), [readOnly, placeholder, enableVim, config]);
+  // Use refs for callbacks to prevent recreation
+  const onContentChangeRef = useRef(onContentChange);
+  const onCursorPositionChangeRef = useRef(onCursorPositionChange);
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  const onScrollChangeRef = useRef(onScrollChange);
+  const onFocusRef = useRef(onFocus);
+  const onBlurRef = useRef(onBlur);
 
-  // Initialize CodeMirror editor
+  // Update refs when props change
   useEffect(() => {
-    if (!editorRef.current) return;
+    onContentChangeRef.current = onContentChange;
+    onCursorPositionChangeRef.current = onCursorPositionChange;
+    onSelectionChangeRef.current = onSelectionChange;
+    onScrollChangeRef.current = onScrollChange;
+    onFocusRef.current = onFocus;
+    onBlurRef.current = onBlur;
+  });
 
-    const extensions = createMarkdownEditorExtensions(editorConfig);
+  // Memoize editor configuration to prevent unnecessary reconfiguration
+  const editorConfig = useMemo<EditorConfig>(() => {
+    const config_obj = {
+      readOnly,
+      placeholder,
+      enableSearch: true,
+      enableAutocompletion: true,
+      lineNumbers: true,
+      lineWrapping: true,
+      highlightActiveLine: !readOnly,
+      vimMode: enableVim,
+      darkTheme: false, // TODO: Get from theme context
+      ...config,
+    };
+    console.log('[Clean Architecture MarkdownEditor] Editor config recreated');
+    console.log('[Clean Architecture MarkdownEditor] Config recreated because deps changed:', {
+      readOnly,
+      placeholder,
+      enableVim,
+      configIsObject: typeof config === 'object',
+      configStringified: JSON.stringify(config),
+      placeholderLength: placeholder?.length
+    });
+    return config_obj;
+  }, [readOnly, enableVim, JSON.stringify(config)]);
 
-    // Add document change listener - with clear debug logs
+  // Initialize CodeMirror editor ONCE (no dependencies to prevent recreation)
+  useEffect(() => {
+    console.log('[Clean Architecture MarkdownEditor] ONE-TIME editor initialization');
+    if (!editorRef.current) {
+      console.log('[Clean Architecture MarkdownEditor] editorRef.current is null, skipping initialization');
+      return;
+    }
+
+    console.log('[Clean Architecture MarkdownEditor] Creating extensions for one-time setup...');
+    const baseExtensions = createMarkdownEditorExtensions({
+      readOnly: false, // Will be updated dynamically
+      placeholder: '',  // Will be updated dynamically
+      enableSearch: true,
+      enableAutocompletion: true,
+      lineNumbers: true,
+      lineWrapping: true,
+      highlightActiveLine: true,
+      vimMode: false,
+      darkTheme: false,
+    });
+
+    console.log('[Clean Architecture MarkdownEditor] Setting up updateListener...');
+
+    // Add document change listener - clean and optimized
     const updateListener = EditorView.updateListener.of((update) => {
-      console.log('🔍 Update listener called');
-      console.log('   docChanged:', update.docChanged);
-      console.log('   ignoreNext:', ignoreNextChangeRef.current);
-      console.log('   hasOnContentChange:', !!onContentChange);
+      const isDocChanged = update.docChanged;
+      const isIgnored = ignoreNextChangeRef.current;
 
-      if (update.docChanged) {
+      console.log('[Clean Architecture MarkdownEditor] Update event - docChanged:', isDocChanged, 'ignoreNextChangeRef:', isIgnored);
+
+      // Only handle document changes from user input, not programmatic updates
+      if (update.docChanged && !ignoreNextChangeRef.current) {
         const newContent = update.state.doc.toString();
-        console.log('📝 Content check');
-        console.log('   newLength:', newContent.length);
-        console.log('   currentLength:', contentRef.current?.length || 0);
-        console.log('   isDifferent:', newContent !== contentRef.current);
-
+        console.log('[Clean Architecture MarkdownEditor] Processing user document change:', newContent.substring(0, 50) + '...');
         if (newContent !== contentRef.current) {
-          console.log('✅ Calling onContentChange!');
           contentRef.current = newContent;
-          onContentChange?.(newContent);
+          console.log('[Clean Architecture MarkdownEditor] Content differs - calling onContentChange callback');
+
+          // Use setTimeout to prevent focus issues during rapid typing
+          setTimeout(() => {
+            console.log('[Clean Architecture MarkdownEditor] Executing onContentChange callback now');
+            onContentChangeRef.current?.(newContent);
+          }, 0);
         } else {
-          console.log('❌ Content same, not calling onContentChange');
+          console.log('[Clean Architecture MarkdownEditor] Content same as contentRef - skipping callback');
         }
-      } else {
-        console.log('❌ Conditions not met');
-        console.log('   docChanged:', update.docChanged);
-        console.log('   ignoreNext:', ignoreNextChangeRef.current);
+      } else if (update.docChanged) {
+        console.log('[Clean Architecture MarkdownEditor] Document changed but ignoring (ignoreNextChangeRef.current is true) - this was a programmatic update');
       }
 
       // Handle cursor position changes
-      if (update.selectionSet && onCursorPositionChange) {
+      if (update.selectionSet && onCursorPositionChangeRef.current) {
         const cursor = update.state.selection.main.head;
         const line = update.state.doc.lineAt(cursor);
         const position: CursorPosition = {
           line: line.number - 1, // Convert to 0-based
           column: cursor - line.from,
         };
-        onCursorPositionChange(position);
+        onCursorPositionChangeRef.current(position);
       }
 
       // Handle selection changes
-      if (update.selectionSet && onSelectionChange) {
+      if (update.selectionSet && onSelectionChangeRef.current) {
         const selection = update.state.selection.main;
         const selectionData: TextSelection = {
           from: EditorUtils.getCursorPosition(viewRef.current!),
           to: EditorUtils.getCursorPosition(viewRef.current!),
           text: update.state.doc.sliceString(selection.from, selection.to),
         };
-        onSelectionChange(selectionData);
+        onSelectionChangeRef.current(selectionData);
       }
     });
 
@@ -169,96 +216,82 @@ export const MarkdownEditor = React.memo<MarkdownEditorProps>(({
     const scrollListener = EditorView.domEventHandlers({
       scroll: (event, view) => {
         const scrollTop = (event.target as HTMLElement).scrollTop;
-        onScrollChange?.(scrollTop);
+        onScrollChangeRef.current?.(scrollTop);
         return false;
       },
     });
 
+    console.log('[Clean Architecture MarkdownEditor] Creating initial state with content:', content.substring(0, 50) + '...');
+    console.log('[Clean Architecture MarkdownEditor] Extensions count - base:', baseExtensions.length, 'total with listeners:', baseExtensions.length + 3);
+
+    const allExtensions = [
+      ...baseExtensions,
+      updateListener,
+      scrollListener,
+      EditorView.contentAttributes.of({
+        'aria-label': ariaLabel,
+        'aria-describedby': ariaDescribedBy,
+        'spellcheck': spellCheck.toString(),
+      }),
+    ];
+
+    console.log('[Clean Architecture MarkdownEditor] Final extensions array length:', allExtensions.length);
+
     // Create editor state
     const initialState = EditorState.create({
       doc: content,
-      extensions: [
-        ...extensions,
-        updateListener,
-        scrollListener,
-        EditorView.contentAttributes.of({
-          'aria-label': ariaLabel,
-          'aria-describedby': ariaDescribedBy,
-          'spellcheck': spellCheck.toString(),
-        }),
-      ],
+      extensions: allExtensions,
     });
 
+    console.log('[Clean Architecture MarkdownEditor] Creating editor view...');
     // Create editor view
     const view = new EditorView({
       state: initialState,
       parent: editorRef.current,
     });
 
+    console.log('[Clean Architecture MarkdownEditor] Editor view created successfully');
     viewRef.current = view;
 
-    // BACKUP: Direct DOM event listener for input changes
+    // Use editorElement reference for focus/blur events only
     const editorElement = view.dom;
-    let lastContent = content;
-
-    const handleDirectInput = () => {
-      const currentContent = view.state.doc.toString();
-      if (currentContent !== lastContent) {
-        console.log('🔥 Direct input detected! New content:', currentContent.substring(0, 50) + '...');
-        lastContent = currentContent;
-        contentRef.current = currentContent;
-        onContentChange?.(currentContent);
-      }
-    };
-
-    // Listen to multiple input events
-    editorElement.addEventListener('input', handleDirectInput);
-    editorElement.addEventListener('keyup', handleDirectInput);
-    editorElement.addEventListener('paste', handleDirectInput);
 
     // Auto focus if requested
+    console.log('[Clean Architecture MarkdownEditor] autoFocus:', autoFocus);
     if (autoFocus) {
+      console.log('[Clean Architecture MarkdownEditor] Focusing editor...');
       view.focus();
     }
 
     // Focus/blur event handlers
-    const handleFocus = () => onFocus?.();
-    const handleBlur = () => onBlur?.();
+    const handleFocus = () => onFocusRef.current?.();
+    const handleBlur = () => onBlurRef.current?.();
 
     // Use existing editorElement (declared above)
     editorElement.addEventListener('focus', handleFocus);
     editorElement.addEventListener('blur', handleBlur);
 
-    // Cleanup
+    // Cleanup - only when component unmounts
     return () => {
+      console.log('[Clean Architecture MarkdownEditor] Component unmounting - cleaning up editor');
       editorElement.removeEventListener('focus', handleFocus);
       editorElement.removeEventListener('blur', handleBlur);
-      // Remove backup input listeners
-      editorElement.removeEventListener('input', handleDirectInput);
-      editorElement.removeEventListener('keyup', handleDirectInput);
-      editorElement.removeEventListener('paste', handleDirectInput);
       view.destroy();
       viewRef.current = null;
     };
-  }, [
-    editorConfig,
-    ariaLabel,
-    ariaDescribedBy,
-    spellCheck,
-    autoFocus,
-    onContentChange,
-    onCursorPositionChange,
-    onSelectionChange,
-    onScrollChange,
-    onFocus,
-    onBlur,
-  ]);
+  }, []); // Empty dependency array - initialize only once
 
   // Update content when prop changes
   useEffect(() => {
     const view = viewRef.current;
-    if (!view || content === contentRef.current) return;
+    console.log('[Clean Architecture MarkdownEditor] Content prop changed. Current content ref:', contentRef.current?.substring(0, 50) + '...', 'New content:', content.substring(0, 50) + '...');
 
+    if (!view || content === contentRef.current) {
+      console.log('[Clean Architecture MarkdownEditor] Skipping content update - no view or content unchanged');
+      return;
+    }
+
+    console.log('[Clean Architecture MarkdownEditor] Setting ignoreNextChangeRef = true for programmatic update');
     ignoreNextChangeRef.current = true;
 
     // Update document content
@@ -271,7 +304,12 @@ export const MarkdownEditor = React.memo<MarkdownEditorProps>(({
     });
 
     contentRef.current = content;
-    ignoreNextChangeRef.current = false;
+
+    // Reset the flag in the next event loop to ensure CodeMirror events are processed first
+    setTimeout(() => {
+      console.log('[Clean Architecture MarkdownEditor] Setting ignoreNextChangeRef = false after programmatic update (delayed)');
+      ignoreNextChangeRef.current = false;
+    }, 0);
   }, [content]);
 
   // Update cursor position when prop changes
@@ -293,6 +331,31 @@ export const MarkdownEditor = React.memo<MarkdownEditorProps>(({
     }
   }, [cursorPosition]);
 
+  // TEMPORARILY DISABLED: Update editor configuration dynamically
+  // This was overriding the updateListener - need to fix this properly
+  /*
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+
+    console.log('[Clean Architecture MarkdownEditor] Dynamically updating editor config:', { readOnly, enableVim, placeholder });
+
+    const dynamicConfig = {
+      readOnly,
+      placeholder,
+      enableSearch: true,
+      enableAutocompletion: true,
+      lineNumbers: true,
+      lineWrapping: true,
+      highlightActiveLine: !readOnly,
+      vimMode: enableVim,
+      darkTheme: false,
+    };
+
+    updateEditorConfig(view, dynamicConfig);
+  }, [readOnly, enableVim, placeholder]);
+  */
+
   // Update scroll position when prop changes
   useEffect(() => {
     const view = viewRef.current;
@@ -301,14 +364,6 @@ export const MarkdownEditor = React.memo<MarkdownEditorProps>(({
     const editorElement = view.scrollDOM;
     editorElement.scrollTop = scrollPosition;
   }, [scrollPosition]);
-
-  // Update configuration when it changes
-  useEffect(() => {
-    const view = viewRef.current;
-    if (!view) return;
-
-    updateEditorConfig(view, editorConfig);
-  }, [editorConfig]);
 
   // Imperative API through ref
   const editorApi = useMemo(() => ({

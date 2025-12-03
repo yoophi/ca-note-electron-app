@@ -17,6 +17,11 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({
   content,
   isLoading = false,
 }) => {
+  console.log('[PreviewPane Wrapper] Received content:', content.substring(0, 50) + '...');
+
+  React.useEffect(() => {
+    console.log('[PreviewPane Wrapper] Content changed in effect:', content.substring(0, 50) + '...');
+  }, [content]);
 
   const handleLinkClick = useCallback((url: string, event: React.MouseEvent) => {
     // Handle external link clicks
